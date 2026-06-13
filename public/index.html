@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>山中小屋3 - 共享文档辅助程序</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 动态主题背景 */
+        body {
+            font-family: 'Segoe UI', 'Cinema', 'Courier New', monospace;
+            padding: 20px;
+            min-height: 100vh;
+            transition: background 0.3s ease;
+            position: relative;
+        }
+
+        body.theme-none {
+            background: #4a4e5c;
+            background-image: radial-gradient(circle at 20% 30%, rgba(0, 0, 0, 0.2) 2%, transparent 2.5%);
+            background-size: 50px 50px;
+        }
+
+        body.theme-bloodmoon {
+            background: #8b2c1d;
+            background-image: radial-gradient(circle at 10% 20%, rgba(0, 0, 0, 0.2) 2%, transparent 2.5%);
+            background-size: 40px 40px;
+        }
+
+        body.theme-xmas {
+            background: #2c5e2e;
+            background-image: linear-gradient(45deg, #3c7a3e 25%, transparent 25%),
+                linear-gradient(-45deg, #3c7a3e 25%, transparent 25%);
+            background-size: 60px 60px;
+        }
+
+        body.theme-joker {
+            background: #ffb6c1;
+            background-image: radial-gradient(circle at 20% 40%, #ff99aa 3%, transparent 3.5%);
+            background-size: 50px 50px;
+        }
+
+        .theme-decor {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .decor-item {
+            position: absolute;
+            font-size: 4rem;
+            opacity: 0.2;
+            user-select: none;
+            animation: float 20s infinite alternate;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px) rotate(0deg);
+            }
+
+            100% {
+                transform: translateY(-30px) rotate(10deg);
+            }
+        }
+
+        .master-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 2rem;
+            padding: 1.2rem;
+            backdrop-filter: blur(1px);
+            border: 1px solid #b87c4f;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* 头部布局 - 使用flex保持标题居中 */
+        .header-area {
+            text-align: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .header-flex {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .header-left {
+            width: 180px;
+            visibility: hidden;
+        }
+
+        .header-center {
+            flex: 0 1 auto;
+        }
+
+        .header-right {
+            text-align: right;
+            font-size: 0.85rem;
+            color: #ffefb3;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 10px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+
+        @media (max-width: 700px) {
+            .header-left {
+                width: 100px;
+            }
+
+            .header-right {
+                font-size: 0.7rem;
+                white-space: normal;
+                word-break: keep-all;
+            }
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            letter-spacing: 4px;
+            text-shadow: 4px 4px 0 #2a1f12;
+            color: #f5d742;
+            margin: 0;
+        }
+
+        .expand-hint {
+            font-size: 0.9rem;
+            color: #ffe0a3;
+            background: #00000080;
+            padding: 6px 14px;
+            border-radius: 30px;
+            display: inline-block;
+            margin: 8px 0;
+        }
+
+        .expand-section {
+            background: #1e252bb3;
+            border-radius: 50px;
+            padding: 12px 20px;
+            margin-top: 5px;
+            display: inline-flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .expand-options {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .expand-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+        }
+
+        .expand-option.active-expansion {
+            color: #1890ff;
+            /* 蓝色文字 */
+            font-weight: bold;
+            /* 加粗（可选，增强识别） */
+        }
+
+        .confirm-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .confirm-start-btn {
+            background: #4a6a3e;
+            color: white;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px black;
+            white-space: nowrap;
+        }
+
+        .confirm-start-btn:hover {
+            background: #5f834e;
+        }
+
+        .selected-exp-display {
+            background: #2c2b22;
+            padding: 4px 12px;
+            border-radius: 30px;
+            font-size: 0.85rem;
+            color: #ffefb9;
+            white-space: nowrap;
+        }
+
+        /* 游戏内容容器 */
+        #gameContent {
+            position: relative;
+            transition: opacity 0.2s;
+        }
+
+        .floating-hint {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            border-radius: 1.5rem;
+            pointer-events: none;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffefb3;
+            text-shadow: 2px 2px 0 #000;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .floating-hint span {
+            background: #2c2a24cc;
+            padding: 15px 30px;
+            border-radius: 60px;
+            border: 2px solid #f7d44a;
+        }
+
+        .highlight-text {
+            font-weight: bold;
+            color: #ff4d4d;
+            text-shadow: 0 0 5px #ff0000, 0 0 10px #ff6600;
+            animation: blinkGlow 1.2s infinite alternate;
+            display: inline-block;
+        }
+
+        @keyframes blinkGlow {
+            0% {
+                text-shadow: 0 0 2px red, 0 0 4px orange;
+                opacity: 0.8;
+            }
+
+            100% {
+                text-shadow: 0 0 12px red, 0 0 20px #ff9900;
+                opacity: 1;
+            }
+        }
+
+        /* 左右双栏 - 各占一半宽度 */
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.8rem;
+            margin-bottom: 2rem;
+        }
+
+        .left-column {
+            flex: 1 1 calc(50% - 0.9rem);
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.8rem;
+        }
+
+        .right-column {
+            flex: 1 1 calc(50% - 0.9rem);
+            min-width: 320px;
+        }
+
+        /* 板块通用卡片 */
+        .card-panel {
+            border-radius: 1.5rem;
+            padding: 1rem;
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.1s;
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 0.8rem;
+            border-left: 6px solid currentColor;
+            padding-left: 12px;
+            letter-spacing: 2px;
+            color: white;
+        }
+
+        /* 房间探索 */
+        .room-panel {
+            background: #2c1e16e0;
+            border-top: 3px solid #bc7a4a;
+        }
+
+        .room-panel .panel-title {
+            color: #e7b27a;
+            border-left-color: #d9914a;
+        }
+
+        /* 鉴定骰子 */
+        .dice-panel {
+            background: #e9e2cce0;
+            border-top: 3px solid #e4b363;
+            color: #2c2b26;
+        }
+
+        .dice-panel .panel-title {
+            color: #7a5a2c;
+            border-left-color: #dbb23b;
+        }
+
+        /* 互动抽卡主背景 */
+        .interact-panel {
+            background: #2a1f2ce0;
+            border-top: 3px solid #b77bc4;
+        }
+
+        .interact-panel .panel-title {
+            color: white;
+        }
+
+        /* 子板块色调 */
+        .sub-card.omen {
+            background: #1d3a2de0;
+            border-left: 6px solid #2e8b57;
+        }
+
+        .sub-card.item {
+            background: #5d2e1ee0;
+            border-left: 6px solid #b87333;
+        }
+
+        .sub-card.event {
+            background: #6b4c1ce0;
+            border-left: 6px solid #e6b422;
+        }
+
+        .sub-card.joker {
+            background: #ffb6c1e0;
+            border-left: 6px solid #ff69b4;
+        }
+
+        .sub-card {
+            border-radius: 1rem;
+            padding: 10px;
+            margin-top: 1rem;
+        }
+
+        .sub-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            margin-bottom: 8px;
+            gap: 8px;
+        }
+
+        .sub-title {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #fff2df;
+        }
+
+        /* ---------- 垂直按钮 + 结果栏布局 ---------- */
+        /* 房间探索专用 flex 行布局 */
+        .room-layout {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .room-buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .room-buttons-vertical button {
+            padding: 8px 4px;
+            font-size: 1.2rem;
+            border-radius: 40px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 1px 3px black;
+            text-align: center;
+        }
+
+        /* 第一层按钮默认背景 */
+        .room-buttons-vertical button.floor-btn {
+            background: #6a3e2a;
+            color: #ffecb3;
+        }
+
+        .room-buttons-vertical button.bury-btn {
+            background: #6b3e3e;
+            color: #f5e2c9;
+        }
+
+        .room-buttons-vertical button.reshuffle-btn {
+            background: #3a6b3e;
+            color: #f5e2c9;
+        }
+
+        .room-buttons-vertical button.undo-btn {
+            background: #2f4f4f;
+            color: #f5e2c9;
+        }
+
+        .room-buttons-vertical button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .room-result-area {
+            flex: 1;
+            background: #0a080cbb;
+            border-radius: 28px;
+            padding: 10px 16px;
+            border-left: 5px solid #d4a373;
+            color: #ffefcf;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: auto;
+            font-size: 3rem;
+            /* 装饰图标字体大小 */
+        }
+
+        .room-result-area .glow-number {
+            font-size: 4rem;
+        }
+
+        /* 互动抽卡每个子板块垂直布局 */
+        .sub-card-layout {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .sub-buttons-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex: 1;
+        }
+
+        .sub-buttons-vertical button {
+            width: 100%;
+            padding: 6px 4px;
+            font-size: 1.2rem;
+            border-radius: 40px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 1px 3px black;
+            border: none;
+        }
+
+        .sub-buttons-vertical .draw-big-btn {
+            background: #5f3d8a;
+            color: white;
+        }
+
+        .sub-buttons-vertical .bury-btn {
+            background: #6b3e3e;
+            color: #f5e2c9;
+        }
+
+        .sub-buttons-vertical .reshuffle-btn {
+            background: #3a6b3e;
+            color: #f5e2c9;
+        }
+
+        .sub-buttons-vertical .undo-btn {
+            background: #2f4f4f;
+            color: #f5e2c9;
+        }
+
+        .sub-buttons-vertical button:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+
+        .sub-result-area {
+            flex: 1;
+            background: #0a080cbb;
+            border-radius: 28px;
+            padding: 10px 16px;
+            border-left: 5px solid #d4a373;
+            color: #ffefcf;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: auto;
+            font-size: 3rem;
+            /* 装饰图标字体大小 */
+        }
+
+        .sub-result-area .glow-number {
+            font-size: 4rem;
+        }
+
+        /* 鉴定骰子布局 */
+        .dice-layout {
+            display: flex;
+            gap: 1rem;
+            align-items: stretch;
+        }
+
+        .dice-controls-vertical {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .dice-count-area {
+            background: #faf3e2;
+            border-radius: 50px;
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .dice-count-area button {
+            font-size: 1.2rem;
+            padding: 4px 12px;
+            border-radius: 40px;
+            background: #a56b2f;
+            color: white;
+            border: none;
+        }
+
+        .dice-count-area input {
+            background: #ffffff;
+            border: 1px solid #b87c4f;
+            width: 60px;
+            text-align: center;
+            font-size: 1.2rem;
+            padding: 4px;
+            border-radius: 30px;
+        }
+
+        #rollDiceBtn {
+            background: #b77c2e;
+            font-size: 1.2rem;
+            padding: 8px 12px;
+            border-radius: 40px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 2px 4px black;
+            width: 100%;
+        }
+
+        .dice-visual-area {
+            background: #faf3e2;
+            border-radius: 30px;
+            padding: 8px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            min-height: 100px;
+        }
+
+        .dice-box {
+            width: 60px;
+            height: 60px;
+            background: #faf0e1;
+            border-radius: 14px;
+            box-shadow: inset 0 -2px 0 #b0a088, 0 4px 8px black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dice-pips {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 70%;
+            height: 70%;
+            gap: 3px;
+        }
+
+        .pip {
+            background-color: #2d2b1f;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .pip.visible {
+            opacity: 1;
+        }
+
+        .pip.hidden {
+            opacity: 0;
+        }
+
+        .dice-result-area {
+            flex: 1;
+            background: #0a080cbb;
+            border-radius: 28px;
+            padding: 10px 16px;
+            border-left: 5px solid #d4a373;
+            color: #ffefcf;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        /* 修改“🧮 总点数：”字体大小为3rem */
+        .dice-result-area>div:first-child {
+            font-size: 3rem;
+        }
+
+        .dice-result-area #diceSum {
+            font-size: 4rem;
+        }
+
+        .glow-number {
+            text-shadow: 0 0 20px gold, 0 0 12px orange, 0 0 6px #ffcc44;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        /* 按钮通用样式 (兼容) */
+        button {
+            cursor: pointer;
+            border: none;
+            font-family: monospace;
+            font-weight: bold;
+            transition: 0.1s;
+        }
+
+        .history-log {
+            background: #0b1117;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            padding: 8px;
+            border-radius: 20px;
+            color: #b8c7d9;
+        }
+
+        .rolling {
+            animation: pulse 0.08s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.7;
+                text-shadow: 0 0 2px gold;
+                transform: scale(1);
+            }
+
+            100% {
+                opacity: 1;
+                text-shadow: 0 0 6px orange;
+                transform: scale(1.02);
+            }
+        }
+
+        /* 弹窗通用变大 */
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000000cc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-card {
+            border-radius: 2rem;
+            padding: 32px;
+            min-width: 450px;
+            max-width: 700px;
+            border: 2px solid #e4b05a;
+            color: #f2e3c9;
+        }
+
+        .modal-card h3 {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .burial-buttons-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin: 24px 0;
+            max-height: 360px;
+            overflow-y: auto;
+        }
+
+        .burial-card-btn {
+            padding: 12px 22px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            border: none;
+        }
+
+        .burial-card-btn:hover {
+            transform: scale(1.02);
+        }
+
+        .modal-close-btn {
+            padding: 10px 24px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+        }
+
+        .footer-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        /* 埋葬弹窗专属样式 */
+        .modal-card.bury-modal {
+            background: #2c2620;
+        }
+
+        .modal-card.bury-modal .burial-card-btn {
+            background: #3e2c20;
+            color: white;
+        }
+
+        .modal-card.bury-modal .burial-card-btn:hover {
+            background: #5e4632;
+        }
+
+        .modal-card.bury-modal .modal-close-btn {
+            background: #6b3e3e;
+            color: white;
+        }
+
+        .modal-card.bury-modal .modal-close-btn:hover {
+            background: #8b4e4e;
+        }
+
+        /* 洗回牌堆弹窗专属样式 */
+        .modal-card.reshuffle-modal {
+            background: #0a2a4a;
+            border-color: #3a8cff;
+        }
+
+        .modal-card.reshuffle-modal .burial-card-btn {
+            background: #06203a;
+            color: #ccddff;
+        }
+
+        .modal-card.reshuffle-modal .burial-card-btn:hover {
+            background: #0a3a5a;
+        }
+
+        .modal-card.reshuffle-modal .modal-close-btn {
+            background: #1e4a6e;
+            color: white;
+        }
+
+        .modal-card.reshuffle-modal .modal-close-btn:hover {
+            background: #2e6a8e;
+        }
+
+        hr {
+            border-color: #c29a6b;
+            margin: 8px 0;
+        }
+
+        /* 重置游戏按钮样式统一 */
+        #resetGameBtn {
+            background: #633e2c;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.1s;
+            box-shadow: 0 1px 3px black;
+            padding: 4px 14px;
+            font-size: 1.2rem;
+        }
+
+        #resetGameBtn:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+
+<body class="theme-none">
+    <div class="theme-decor" id="themeDecor"></div>
+
+    <div class="master-container">
+        <!-- 头部 -->
+        <div class="header-area">
+            <div class="header-flex">
+                <div class="header-left"></div>
+                <div class="header-center">
+                    <h1>🏚️山中小屋3 - 共享文档辅助程序</h1>
+                </div>
+                <div class="header-right">www.bilibili.com/video/BV1HQf8BKEPr</div>
+            </div>
+            <div class="expand-hint">⭐ 开局请先选择拓展包，并确认开局</div>
+            <div class="expand-section">
+                <div class="expand-options" id="expansionGroup">
+                    <label class="expand-option"><input type="radio" name="expansion" value="none" checked> 📖
+                        无拓展包（仅游玩本体）</label>
+                    <label class="expand-option"><input type="radio" name="expansion" value="bloodmoon"> 🐺 血色满月</label>
+                    <label class="expand-option"><input type="radio" name="expansion" value="xmas"> 🎄 圣诞惊魂夜</label>
+                    <label class="expand-option"><input type="radio" name="expansion" value="joker"> 🤡 小丑回魂</label>
+                </div>
+                <div class="confirm-area">
+                    <button id="confirmStartBtn" class="confirm-start-btn">✅ 确认开局</button>
+                    <div id="selectedExpDisplay" class="selected-exp-display">当前选择：📖 无拓展包</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 游戏内容 (初始禁用) -->
+        <div id="gameContent" style="opacity:0.6; pointer-events:none; transition:0.2s; position: relative;">
+            <div class="floating-hint" id="floatingHint">
+                <span>请先在<span class="highlight-text">界面上方</span>勾选拓展包，并点击<span
+                        class="highlight-text">确认开局</span></span>
+            </div>
+            <div class="two-columns">
+                <!-- 左侧 -->
+                <div class="left-column">
+                    <!-- 房间探索 -->
+                    <div class="card-panel room-panel">
+                        <div class="panel-title">🏚️ 房屋探索（本体1~42+拓展）</div>
+                        <div class="room-layout">
+                            <div class="room-buttons-vertical">
+                                <button class="floor-btn" data-action="room-floor2">🏢 第二层</button>
+                                <button class="floor-btn" data-action="room-floor1">🏠 第一层</button>
+                                <button class="floor-btn" data-action="room-floor0">🕳️ 地下层</button>
+                                <button class="bury-btn" data-action="room-bury">⚰️ 埋葬房间</button>
+                                <button class="reshuffle-btn" data-action="room-reshuffle">🔄 洗回牌堆</button>
+                            </div>
+                            <div class="room-result-area" id="roomResultDisplay">⚡ 等待探索</div>
+                        </div>
+                    </div>
+
+                    <!-- 鉴定骰子 -->
+                    <div class="card-panel dice-panel">
+                        <div class="panel-title">🎲 鉴定骰子</div>
+                        <div class="dice-layout">
+                            <div class="dice-controls-vertical">
+                                <div class="dice-count-area">
+                                    <button id="diceMinus">-</button>
+                                    <input type="number" id="diceCount" min="1" max="8" value="3">
+                                    <button id="dicePlus">+</button>
+                                </div>
+                                <button id="rollDiceBtn">🎲 投掷骰子</button>
+                                <div class="dice-visual-area" id="diceVisuals"></div>
+                            </div>
+                            <div class="dice-result-area">
+                                <div>🧮 总点数：</div>
+                                <div><span id="diceSum" class="glow-number">0</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右侧互动抽卡 -->
+                <div class="right-column">
+                    <div class="card-panel interact-panel">
+                        <div class="panel-title">🃏 互动抽卡</div>
+                        <div id="interactContainer">
+                            <!-- 事件牌库 -->
+                            <div class="sub-card event">
+                                <div class="sub-header"><span class="sub-title">⁉️ 事件牌库 (本体1~43 + 拓展)</span></div>
+                                <div class="sub-card-layout">
+                                    <div class="sub-buttons-vertical">
+                                        <button class="draw-big-btn" data-action="event-draw">🎉 抽取事件</button>
+                                        <button class="bury-btn" data-action="event-bury">⚰️ 埋葬事件</button>
+                                        <button class="reshuffle-btn" data-action="event-reshuffle">🔄 洗回牌堆</button>
+                                    </div>
+                                    <div class="sub-result-area" id="eventResult">-</div>
+                                </div>
+                            </div>
+                            <!-- 小丑遭遇 (动态显示) -->
+                            <div class="sub-card joker" id="jokerModule" style="display:none;">
+                                <div class="sub-header"><span class="sub-title">🤡 小丑遭遇 (1~10)</span></div>
+                                <div class="sub-card-layout">
+                                    <div class="sub-buttons-vertical">
+                                        <button class="draw-big-btn" data-action="joker-draw">🎭 抽取遭遇</button>
+                                        <button class="bury-btn" data-action="joker-bury">⚰️ 埋葬遭遇</button>
+                                        <button class="reshuffle-btn" data-action="joker-reshuffle">🔄 洗回牌堆</button>
+                                    </div>
+                                    <div class="sub-result-area" id="jokerResult">-</div>
+                                </div>
+                            </div>
+                            <!-- 预兆 -->
+                            <div class="sub-card omen">
+                                <div class="sub-header"><span class="sub-title">🦇 预兆牌库 (1~9)</span></div>
+                                <div class="sub-card-layout">
+                                    <div class="sub-buttons-vertical">
+                                        <button class="draw-big-btn" data-action="omen-draw">🔮 抽取预兆</button>
+                                        <button class="bury-btn" data-action="omen-bury">⚰️ 埋葬预兆</button>
+                                        <button class="reshuffle-btn" data-action="omen-reshuffle">🔄 洗回牌堆</button>
+                                    </div>
+                                    <div class="sub-result-area" id="omenResult">-</div>
+                                </div>
+                            </div>
+                            <!-- 物品 -->
+                            <div class="sub-card item">
+                                <div class="sub-header"><span class="sub-title">📦 物品牌库 (本体1~24 + 拓展)</span></div>
+                                <div class="sub-card-layout">
+                                    <div class="sub-buttons-vertical">
+                                        <button class="draw-big-btn" data-action="item-draw">🎁 抽取物品</button>
+                                        <button class="bury-btn" data-action="item-bury">⚰️ 埋葬物品</button>
+                                        <button class="reshuffle-btn" data-action="item-reshuffle">🔄 洗回牌堆</button>
+                                    </div>
+                                    <div class="sub-result-area" id="itemResult">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部记录 -->
+            <div class="record-panel"
+                style="background:#161d21e0; border-radius:1.5rem; padding:0.8rem; margin-top:0.5rem;">
+                <div
+                    style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+                    <div class="panel-title" style="font-size:1.2rem; margin:0; color:#d4bb8c;">📋 使用记录</div>
+                    <button id="resetGameBtn">🔄 进行下局游戏（重新洗牌）</button>
+                </div>
+                <div class="history-log" id="logArea">
+                    <p>✨ 欢迎来到山中小屋，请先选择拓展包并点击“确认开局”</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let serverState = null;
+        // ---------- 全局状态 ----------
+        let gameStarted = false;
+        let currentExp = 'none';
+
+        // 音频
+        let audioCtx = null;
+        function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        function playBeep(type) {
+            if (!audioCtx) initAudio();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            if (type === 'roll') {
+                osc.frequency.value = 960;
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
+                osc.start();
+                osc.stop(now + 0.1);
+            } else {
+                osc.frequency.value = 620;
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+                osc.start();
+                osc.stop(now + 0.28);
+            }
+        }
+        let rollLoop = null;
+        function startRollSound() { if (rollLoop) clearInterval(rollLoop); rollLoop = setInterval(() => playBeep('roll'), 70); }
+        function stopRollSound() { if (rollLoop) { clearInterval(rollLoop); rollLoop = null; } }
+
+
+        async function loadState() {
+            try {
+                const res_obj = await apiGet('/api/state');
+                const state = res_obj.state;
+                serverState = state;
+                oldGS = gameStarted;
+                gameStarted = state.gameStarted;
+                if (oldGS !== gameStarted) {
+                    updateExpansionAvailability();
+                }
+                // console.log(state)
+                renderState(state);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function apiGet(url) {
+            const res = await fetch(url);
+            return await res.json();
+        }
+
+        async function apiPost(url, data = {}) {
+            const res = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            });
+            const result = await res.json();
+            if (!res.ok) {
+                throw new Error(result.error || '请求失败');
+            }
+            return result;
+        }
+
+        function renderState(state) {
+            document.getElementById('roomResultDisplay').innerHTML =
+                `<span class="glow-number">${state.results.room}</span>`;
+
+            document.getElementById('eventResult').innerHTML =
+                `<span class="glow-number">${state.results.event}</span>`;
+
+            document.getElementById('omenResult').innerHTML =
+                `<span class="glow-number">${state.results.omen}</span>`;
+
+            document.getElementById('itemResult').innerHTML =
+                `<span class="glow-number">${state.results.item}</span>`;
+
+            document.getElementById('jokerResult').innerHTML =
+                `<span class="glow-number">${state.results.joker}</span>`;
+
+            // document.getElementById('diceCount').value =
+            //     state.diceCount;
+
+            document.getElementById('diceSum').innerHTML =
+                state.diceSum;
+
+            // renderDice(state.diceVisuals);
+
+            document.getElementById('logArea').innerHTML =
+                state.log.map(x => `<p>${x}</p>`).join('');
+
+            document.getElementById('jokerModule').style.display =
+                state.currentExp === 'joker'
+                    ? 'block'
+                    : 'none';
+
+            if (state.gameStarted) {
+                console.log(state.gameStarted)
+                document.getElementById('gameContent').style.opacity = '1';
+                document.getElementById('gameContent').style.pointerEvents = 'auto';
+                document.getElementById('floatingHint').style.display = 'none';
+            }
+            else {
+                console.log(state.gameStarted)
+                document.getElementById('gameContent').style.opacity = '0.6';
+                document.getElementById('gameContent').style.pointerEvents = 'none';
+                document.getElementById('floatingHint').style.display = 'flex';
+            }
+
+            if (serverState.gameStarted) {
+                lockUI(false);
+            } else {
+                lockUI(true);
+            }
+        }
+
+        function renderDice(results) {
+            const visualsDiv =
+                document.getElementById('diceVisuals');
+            visualsDiv.innerHTML = '';
+
+            results.forEach(v => {
+                const diceDiv =
+                    document.createElement('div');
+                diceDiv.className = 'dice-box';
+                diceDiv.appendChild(
+                    renderDicePips(v)
+                );
+                visualsDiv.appendChild(diceDiv);
+            });
+        }
+
+        // 抽取动画
+        async function drawWithAnimation(deck, floor, displayElem, moduleNameForLog, resultIcon = '✨') {
+            startRollSound();
+            displayElem.classList.add('rolling');
+
+            let remains = []
+            switch (deck) {
+                case 'room': {
+                    remains = serverState.decks.room.remaining;
+                    break;
+                }
+                case 'event': {
+                    remains = serverState.decks.event.remaining;
+                    break;
+                }
+                case 'omen': {
+                    remains = serverState.decks.omen.remaining;
+                    break;
+                }
+                case 'item': {
+                    remains = serverState.decks.item.remaining;
+                    break;
+                }
+                case 'joker': {
+                    remains = serverState.decks.joker.remaining;
+                    break;
+                }
+            }
+            if (remains.length !== 0) {
+                let interval = setInterval(() => {
+                    displayElem.innerHTML = `🎲 ${remains[Math.floor(Math.random() * remains.length)]}`;
+                }, 70);
+                await new Promise(r => setTimeout(r, 500));
+                clearInterval(interval);
+            }
+
+            let res_obj = await apiPost('/api/draw', {
+                deck: deck,
+                floor: floor
+            });
+
+            stopRollSound();
+            displayElem.classList.remove('rolling');
+            if (!res_obj.ok) {
+                alert(res_obj.error)
+                return
+            }
+            playBeep('result');
+            await loadState();
+        }
+
+
+        async function buryCard(deckName, val) {
+            res_obj = await apiPost('/api/bury', {
+                deck: deckName,
+                value: val
+            });
+            await loadState();
+            return res_obj.ok
+        }
+
+        async function reshuffleCard(deckName, val) {
+            res_obj = await apiPost('/api/reshuffle', {
+                deck: deckName,
+                value: val
+            });
+            await loadState();
+            return res_obj.ok
+        }
+
+        // 通用弹窗
+        async function showCardSelectionModal(deck, prefixName, actionType, refreshCallback, resultIcon = '⚰️') {
+            await loadState();
+            let drawnList = [];
+            switch (deck) {
+                case 'room': {
+                    drawnList = serverState.decks.room.drawn;
+                    break;
+                }
+                case 'event': {
+                    drawnList = serverState.decks.event.drawn;
+                    break;
+                }
+                case 'omen': {
+                    drawnList = serverState.decks.omen.drawn;
+                    break;
+                }
+                case 'item': {
+                    drawnList = serverState.decks.item.drawn;
+                    break;
+                }
+                case 'joker': {
+                    drawnList = serverState.decks.joker.drawn;
+                    break;
+                }
+            }
+            if (drawnList.length === 0) { alert('没有已抽取的卡牌可供操作'); return; }
+            const modalDiv = document.createElement('div');
+            modalDiv.className = 'modal-mask';
+            let title = actionType === 'bury' ? '⚰️ 埋葬卡牌：点击埋葬，一次一张' : '🔄 洗回牌堆：点击卡牌将其洗回牌堆（可被重新抽到）';
+            let modalClass = actionType === 'bury' ? 'bury-modal' : 'reshuffle-modal';
+            let btnHtml = `<div class="modal-card ${modalClass}"><h3>${title}</h3><div class="burial-buttons-grid">`;
+            drawnList.forEach(num => {
+                btnHtml += `<button class="burial-card-btn" data-val="${num}">${prefixName} ${num}</button>`;
+            });
+            btnHtml += `</div><hr><div class="footer-buttons"><button class="modal-close-btn" id="closeBurialModal">取消</button></div></div>`;
+            modalDiv.innerHTML = btnHtml;
+            document.body.appendChild(modalDiv);
+            modalDiv.querySelectorAll('.burial-card-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const val = parseInt(btn.dataset.val);
+                    let success = false;
+                    if (actionType === 'bury') {
+                        success = await buryCard(deck, val)
+                    } else if (actionType === 'reshuffle') {
+                        success = await reshuffleCard(deck, val)
+                    }
+                    if (success) {
+                        if (refreshCallback) refreshCallback();
+                    } else alert('操作失败');
+                    modalDiv.remove();
+                });
+            });
+            modalDiv.querySelector('#closeBurialModal').addEventListener('click', () => modalDiv.remove());
+        }
+
+        // 撤回一步
+        // async function undoStep(deck, displayElem, moduleDisplayName, resultIcon = '✨') {
+        //     const res_obj = await apiPost('/api/undo', {
+        //         deck: deck
+        //     });
+        //     if (!res_obj.ok) { alert(res_obj.error); return; }
+        //     loadState();
+        // }
+
+        // 骰子相关
+        function renderDicePips(value) {
+            const container = document.createElement('div');
+            container.className = 'dice-pips';
+            let activeIndices = [];
+            if (value === 1) activeIndices = [4];
+            else if (value === 2) activeIndices = [0, 8];
+            for (let i = 0; i < 9; i++) {
+                const pip = document.createElement('div');
+                pip.className = 'pip';
+                if (activeIndices.includes(i)) pip.classList.add('visible');
+                else pip.classList.add('hidden');
+                container.appendChild(pip);
+            }
+            return container;
+        }
+
+        function updateDefaultDiceVisuals(count) {
+            const visualsDiv = document.getElementById('diceVisuals');
+            visualsDiv.innerHTML = '';
+            for (let i = 0; i < count; i++) {
+                const diceDiv = document.createElement('div');
+                diceDiv.className = 'dice-box';
+                diceDiv.appendChild(renderDicePips(1));
+                visualsDiv.appendChild(diceDiv);
+            }
+        }
+
+        document.getElementById('rollDiceBtn')
+            .addEventListener('click', async () => {
+                const count =
+                    parseInt(
+                        document.getElementById('diceCount').value
+                    );
+                await loadState();
+            });
+
+        async function rollDiceWithAnimation(count) {
+            const visualsDiv = document.getElementById('diceVisuals');
+            const sumSpan = document.getElementById('diceSum');
+            startRollSound();
+            let interval = setInterval(() => {
+                let fakeResults = Array(count).fill(0).map(() => Math.floor(Math.random() * 3));
+                visualsDiv.innerHTML = '';
+                fakeResults.forEach(r => {
+                    const diceDiv = document.createElement('div');
+                    diceDiv.className = 'dice-box';
+                    diceDiv.appendChild(renderDicePips(r));
+                    visualsDiv.appendChild(diceDiv);
+                });
+                let rollingSum = fakeResults.reduce((a, b) => a + b, 0);
+                sumSpan.innerHTML = rollingSum;
+                sumSpan.classList.add('glow-number');
+            }, 70);
+            await new Promise(r => setTimeout(r, 500));
+            clearInterval(interval);
+            stopRollSound();
+
+            let res_obj = await apiPost('/api/dice', {
+                count
+            });
+            if (!res_obj.ok) {
+                alert('error');
+                return
+            }
+            await loadState()
+            renderDice(serverState.diceVisuals);
+            // const realResults = serverState.diceVisuals;
+            // visualsDiv.innerHTML = '';
+            // realResults.forEach(r => {
+            //     const diceDiv = document.createElement('div');
+            //     diceDiv.className = 'dice-box';
+            //     diceDiv.appendChild(renderDicePips(r));
+            //     visualsDiv.appendChild(diceDiv);
+            // });
+            // sumSpan.innerHTML = serverState.diceSum;
+            // sumSpan.classList.add('glow-number');
+            playBeep('result');
+        }
+
+        function updateExpDisplay() {
+            const displaySpan = document.getElementById('selectedExpDisplay');
+            if (currentExp === 'none') displaySpan.innerHTML = '当前选择：📖 无拓展包';
+            else if (currentExp === 'bloodmoon') displaySpan.innerHTML = '当前选择：🐺 血色满月';
+            else if (currentExp === 'xmas') displaySpan.innerHTML = '当前选择：🎄 圣诞惊魂夜';
+            else if (currentExp === 'joker') displaySpan.innerHTML = '当前选择：🤡 小丑回魂';
+        }
+
+        function lockUI(locked) {
+            const content = document.getElementById('gameContent');
+            const hint = document.getElementById('floatingHint');
+            if (locked) {
+                content.style.opacity = '0.6';
+                content.style.pointerEvents = 'none';
+                hint.style.display = 'flex';
+            } else {
+                content.style.opacity = '1';
+                content.style.pointerEvents = 'auto';
+                hint.style.display = 'none';
+            }
+        }
+
+        /**
+ * 更新扩展包选择单选按钮的可用状态
+ * @param {boolean} gameStarted - 游戏是否已经开始
+ */
+        function updateExpansionAvailability() {
+            // 获取所有 name="expansion" 的单选按钮
+            const radios = document.querySelectorAll('input[name="expansion"]');
+
+            radios.forEach(radio => {
+                // 游戏开始后禁用，未开始时启用
+                radio.disabled = gameStarted;
+            });
+
+            if (gameStarted) {
+                currentExp = serverState.currentExp
+                if (currentExp) {
+                    const checkedRadio = document.querySelector(`input[name="expansion"][value="${currentExp}"]`);
+                    if (checkedRadio) {
+                        checkedRadio.disabled = false;
+                        const parentLabel = checkedRadio.closest('.expand-option');
+                        if (parentLabel) {
+                            parentLabel.classList.add('active-expansion');
+                        }
+                    }
+                }
+            }
+
+            // （可选）也可以控制确认开局按钮，但通常按钮自己有独立逻辑
+            const confirmBtn = document.getElementById('confirmStartBtn');
+            if (confirmBtn) {
+                // 例如：游戏开始后隐藏或禁用确认按钮
+                confirmBtn.style.display = gameStarted ? 'none' : 'inline-block';
+                // 或者 confirmBtn.disabled = gameStarted;
+            }
+        }
+
+
+        function enableGame() {
+            gameStarted = true;
+            lockUI(false);
+            const radios = document.querySelectorAll('#expansionGroup input[type="radio"]');
+            radios.forEach(radio => { radio.disabled = true; radio.style.opacity = '0.6'; });
+            addLog(`🎮 游戏已开局，拓展包: ${currentExp === 'none' ? '本体' : currentExp}`);
+        }
+
+        function showNotStartedAlert() { alert('请先点击“确认开局”'); }
+
+        // 绑定所有游戏动作
+        function bindGameActions() {
+            // 房间
+            document.querySelector('[data-action="room-floor2"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('room', '2', document.getElementById('roomResultDisplay'), '第二层', '🏚️'); };
+            document.querySelector('[data-action="room-floor1"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('room', '1', document.getElementById('roomResultDisplay'), '第一层', '🏚️'); };
+            document.querySelector('[data-action="room-floor0"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('room', '0', document.getElementById('roomResultDisplay'), '地下层', '🏚️'); };
+            document.querySelector('[data-action="room-bury"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('room', '房间', 'bury', () => document.getElementById('roomResultDisplay').innerHTML = '牌库已更新', '🏚️'); };
+            document.querySelector('[data-action="room-reshuffle"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('room', '房间', 'reshuffle', () => document.getElementById('roomResultDisplay').innerHTML = '牌库已更新', '🔄'); };
+            // 事件
+            document.querySelector('[data-action="event-draw"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('event', null, document.getElementById('eventResult'), '事件', '🎉'); };
+            document.querySelector('[data-action="event-bury"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('event', '事件', 'bury', () => document.getElementById('eventResult').innerHTML = '-', '🎉'); };
+            document.querySelector('[data-action="event-reshuffle"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('event', '事件', 'reshuffle', () => document.getElementById('eventResult').innerHTML = '-', '🔄'); };
+            // 小丑
+            document.querySelector('[data-action="joker-draw"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('joker', null, document.getElementById('jokerResult'), '小丑遭遇', '🎭'); };
+            document.querySelector('[data-action="joker-bury"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('joker', '小丑遭遇', 'bury', () => document.getElementById('jokerResult').innerHTML = '-', '🎭'); };
+            document.querySelector('[data-action="joker-reshuffle"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('joker', '小丑遭遇', 'reshuffle', () => document.getElementById('jokerResult').innerHTML = '-', '🔄'); };
+            // 预兆
+            document.querySelector('[data-action="omen-draw"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('omen', null, document.getElementById('omenResult'), '预兆', '🔮'); };
+            document.querySelector('[data-action="omen-bury"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('omen', '预兆', 'bury', () => document.getElementById('omenResult').innerHTML = '-', '🔮'); };
+            document.querySelector('[data-action="omen-reshuffle"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('omen', '预兆', 'reshuffle', () => document.getElementById('omenResult').innerHTML = '-', '🔄'); };
+            // 物品
+            document.querySelector('[data-action="item-draw"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); drawWithAnimation('item', null, document.getElementById('itemResult'), '物品', '🎁'); };
+            document.querySelector('[data-action="item-bury"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('item', '物品', 'bury', () => document.getElementById('itemResult').innerHTML = '-', '🎁'); };
+            document.querySelector('[data-action="item-reshuffle"]').onclick = () => { if (!gameStarted) return showNotStartedAlert(); showCardSelectionModal('item', '物品', 'reshuffle', () => document.getElementById('itemResult').innerHTML = '-', '🔄'); };
+            // 骰子
+            const diceInput = document.getElementById('diceCount');
+            console.log(diceInput)
+            const updateDicePreview = () => {
+                if (gameStarted) {
+                    let cnt = parseInt(diceInput.value);
+                    if (cnt > 8) cnt = 8;
+                    if (cnt < 1) cnt = 1;
+                    updateDefaultDiceVisuals(cnt);
+                }
+            };
+            diceInput.addEventListener('change', function () {
+                let val = parseInt(this.value);
+                if (isNaN(val)) val = 3;
+                if (val > 8) this.value = 8;
+                if (val < 1) this.value = 1;
+                updateDicePreview();
+            });
+            document.getElementById('diceMinus').onclick = () => { let v = parseInt(diceInput.value); if (v > 1) diceInput.value = v - 1; updateDicePreview(); };
+            document.getElementById('dicePlus').onclick = () => { let v = parseInt(diceInput.value); if (v < 8) diceInput.value = v + 1; updateDicePreview(); };
+            diceInput.addEventListener('input', updateDicePreview);
+            document.getElementById('rollDiceBtn').onclick = () => { if (!gameStarted) return showNotStartedAlert(); let cnt = parseInt(diceInput.value); if (cnt > 8) cnt = 8; if (cnt < 1) cnt = 1; rollDiceWithAnimation(cnt); };
+            document.getElementById('resetGameBtn')
+                .addEventListener('click', async () => {
+                    if (!confirm('确定开始新游戏？'))
+                        return;
+                    await apiPost('/api/reset');
+                    await loadState();
+                });
+        }
+
+        function bindExpansionEvents() {
+            const radios = document.querySelectorAll('#expansionGroup input[type="radio"]');
+            radios.forEach(radio => {
+                radio.addEventListener('change', async () => {
+                    try {
+                        await apiPost('/api/expansion', {
+                            value: radio.value
+                        });
+                        await loadState();
+                    }
+                    catch (err) {
+                        alert(err.message);
+                    }
+                });
+            });
+        }
+
+        function initConfirm() {
+            document.getElementById('confirmStartBtn')
+                .addEventListener('click', async () => {
+                    let res_obj = await apiPost('/api/confirm');
+                    if (res_obj.ok) {
+                        await loadState();
+                    } else {
+                        alert(res_obj.error)
+                    }
+                });
+        }
+
+        async function init() {
+            lockUI(true);
+            await loadState();
+            currentExp = 'none';
+            document.getElementById('jokerModule').style.display = 'none';
+            updateDefaultDiceVisuals(3);
+            document.getElementById('diceSum').innerHTML = '0';
+            document.getElementById('diceSum').classList.add('glow-number');
+            bindExpansionEvents();
+            bindGameActions();
+            initConfirm();
+            updateExpDisplay();
+        };
+        init();
+        setInterval(() => {
+            loadState();
+        }, 1000);
+    </script>
+</body>
+
+</html>
