@@ -1,6 +1,7 @@
 这是一个《山屋惊魂3》桌游的辅助程序，提供抽取和埋葬房间/事件/预兆/物品牌、掷骰子的功能。
 本项目使用node.js后端，JavaScript编写。
-原始代码来自于B站up主**@铀牌讲师**，uid：**140513800**，视频地址：**www.bilibili.com/video/BV1HQf8BKEPr**。本程序仅供学习，禁止商用。
+原始代码来自于B站up主**@铀牌讲师**，uid：**140513800**，视频地址：**www.bilibili.com/video/BV1HQf8BKEPr**。
+本程序仅供学习，禁止商用。
 
 使用：
 安装node.js
